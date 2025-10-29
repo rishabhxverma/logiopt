@@ -135,6 +135,7 @@ einops==0.8.0
 elastic-transport==8.17.0
 elasticsearch==8.17.1
 emoji==2.14.1
+environs==14.3.0
 et-xmlfile @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/et_xmlfile_1699245044998/work
 eval_type_backport==0.2.2
 Events==0.5
@@ -142,6 +143,7 @@ executing @ file:///opt/conda/conda-bld/executing_1646925071911/work
 extract-msg==0.53.1
 fake-useragent==1.5.1
 fastapi==0.115.7
+fastapi_cors==0.0.6
 faster-whisper==1.1.1
 fastjsonschema @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/python-fastjsonschema_1699238535414/work
 filelock @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/filelock_1701804468261/work
