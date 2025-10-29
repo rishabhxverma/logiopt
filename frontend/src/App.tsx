@@ -146,7 +146,7 @@ function App() {
     <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
       <div className="w-screen h-screen flex flex-col">
         <header className="p-4 border-b bg-white shadow-sm z-10">
-          <h1 className="text-2xl font-bold bg-red-500">LogiOpt Dashboard</h1>
+          <h1 className="text-2xl font-bold">LogiOpt Dashboard</h1>
         </header>
 
         {error && (
