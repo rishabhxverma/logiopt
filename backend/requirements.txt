@@ -174,9 +174,10 @@ google-cloud-core==2.4.3
 google-cloud-storage==2.19.0
 google-crc32c==1.6.0
 google-generativeai==0.7.2
+google-geo-type==0.4.0
+google-maps-routing==0.7.0
 google-resumable-media==2.7.2
 googleapis-common-protos==1.63.2
-googlemaps==4.10.0
 greenlet==3.1.1
 grpcio==1.67.1
 grpcio-status==1.62.3
@@ -334,7 +335,7 @@ opentelemetry-sdk==1.27.0
 opentelemetry-semantic-conventions==0.48b0
 opentelemetry-util-http==0.48b0
 orjson==3.10.15
-ortools==9.14.6206
+ortools==9.9.3963
 overrides @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/overrides_1701803470591/work
 packaging==23.2
 pandas==2.2.3
@@ -371,7 +372,7 @@ prompt-toolkit @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T
 propcache==0.3.0
 Protego @ file:///tmp/build/80754af9/protego_1598657180827/work
 proto-plus==1.26.1
-protobuf==6.31.1
+protobuf==5.29.5
 psutil @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/psutil_1699248249804/work
 psycopg2-binary==2.9.9
 ptyprocess @ file:///tmp/build/80754af9/ptyprocess_1609355006118/work/dist/ptyprocess-0.7.0-py2.py3-none-any.whl

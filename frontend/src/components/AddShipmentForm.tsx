@@ -1,15 +1,27 @@
-import { useState } from 'react';
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import * as api from '@/api';
+import * as api from "@/api";
 
 interface AddShipmentFormProps {
   jobId: number;
+  onShipmentAdded: () => void; // <-- 1. Add this new prop
 }
 
-export function AddShipmentForm({ jobId }: AddShipmentFormProps) {
+export function AddShipmentForm({
+  jobId,
+  onShipmentAdded,
+}: AddShipmentFormProps) {
+  // <-- 2. Receive the prop
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
   const [weight, setWeight] = useState(0);
@@ -21,14 +33,22 @@ export function AddShipmentForm({ jobId }: AddShipmentFormProps) {
     setIsLoading(true);
     setError(null);
 
-    const shipmentData: api.ShipmentCreate = { origin, destination, weight: +weight };
+    const shipmentData: api.ShipmentCreate = {
+      origin,
+      destination,
+      weight: +weight,
+    };
 
     try {
       await api.createShipment(jobId, shipmentData);
+
       // Clear the form on success
       setOrigin("");
       setDestination("");
       setWeight(0);
+
+      // <-- 3. Call the callback to notify App.tsx
+      onShipmentAdded();
     } catch (err) {
       console.error("Failed to add shipment", err);
       setError("Failed to add shipment. Please try again.");
@@ -40,7 +60,9 @@ export function AddShipmentForm({ jobId }: AddShipmentFormProps) {
     <Card className="w-full max-w-md mt-6">
       <CardHeader>
         <CardTitle>Add Shipments to Job #{jobId}</CardTitle>
-        <CardDescription>Add at least one shipment to optimize.</CardDescription>
+        <CardDescription>
+          Add at least one shipment to optimize.
+        </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">

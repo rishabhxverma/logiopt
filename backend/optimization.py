@@ -88,8 +88,8 @@ def solve_vrp(job):
     
     # 4. Add "Pickup & Delivery" constraints
     for request in data['pickups_deliveries']:
-        pickup_index = manager.NodeToVecIndex(request[0])
-        delivery_index = manager.NodeToVecIndex(request[1])
+        pickup_index = manager.NodeToIndex(request[0])
+        delivery_index = manager.NodeToIndex(request[1])
         routing.AddPickupAndDelivery(pickup_index, delivery_index)
         routing.solver().Add(
             routing.VehicleVar(pickup_index) == routing.VehicleVar(delivery_index)
