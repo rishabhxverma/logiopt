@@ -1,35 +1,60 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState } from "react";
+// Import our new API function
+import { createJob } from "./api";
+
+// Remove all the default CSS and logo imports
+// import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  // Create state variables to hold the job ID or any error
+  const [jobId, setJobId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // This function will be called when the button is clicked
+  const handleCreateJob = async () => {
+    try {
+      // Clear any old errors
+      setError(null);
+      setJobId(null);
+
+      // Call our API!
+      console.log("Creating new job...");
+      const response = await createJob();
+
+      // On success, 'response.data' will be our new Job object
+      console.log("Success!", response.data);
+      setJobId(response.data.id);
+    } catch (err: any) {
+      // On failure, log the error and show it to the user
+      console.error("Failed to create job:", err);
+      setError(err.message || "An unknown error occurred.");
+    }
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div style={{ padding: "2rem" }}>
+      <h1>LogiOpt Dashboard</h1>
+
+      {/* Our main action button */}
+      <button onClick={handleCreateJob}>Create New Job</button>
+
+      {/* Show the job ID on success */}
+      {jobId && (
+        <div style={{ marginTop: "1rem" }}>
+          <h3>New Job Created!</h3>
+          <p>Job ID: {jobId}</p>
+        </div>
+      )}
+
+      {/* Show an error message on failure */}
+      {error && (
+        <div style={{ marginTop: "1rem", color: "red" }}>
+          <h3>Error:</h3>
+          <p>{error}</p>
+        </div>
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;
