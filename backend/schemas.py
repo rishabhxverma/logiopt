@@ -33,7 +33,7 @@ class Shipment(ShipmentBase):
     class Config:
         # Enables ORM (Object-Relational Mapping) mode.
         # Tells Pydantic to read data from SQLAlchemy model attributes.
-        orm_mode = True
+        from_attributes = True
 
 #==============================================================================
 # Job Schemas
@@ -65,7 +65,7 @@ class Job(JobBase):
     shipments: List[Shipment] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 #==============================================================================

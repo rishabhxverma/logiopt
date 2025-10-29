@@ -1,68 +1,55 @@
-"""
-Optimization module for solving Vehicle Routing Problems (VRP).
-This module uses Google OR-Tools to compute optimal routes for shipments
-associated with a logistics optimization job.
-"""
-
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 from . import schemas
 
+# NEW: Import our Google Maps client
+from . import maps_client
+
 def create_data_model(job):
     """
     Prepares the data for the VRP solver.
-    
-    The solver needs:
-    1. A list of all locations (our 'depot' + all shipment origins/destinations).
-    2. A distance matrix: a grid of travel times between ALL points.
-    3. A list of pickups/deliveries: which location is a 'pickup'
-       and which is its corresponding 'drop'.
+    This version now calls the Google Maps API for a REAL distance matrix.
     """
     
-    # --- 1. Build Location List & Pickups/Deliveries ---
+    # --- 1. Build Location List ---
     
-    # For now, we assume a single 'depot' at a fixed location
-    locations = ["Depot"]
+    # The 'depot' is our fixed warehouse.
+    # In a real app, this would come from the user or database.
+    DEPOT_LOCATION = "450 W 33rd St, New York, NY 10001" # Example: An office in NYC
+    
+    locations = [DEPOT_LOCATION]
     pickups_deliveries = []
     
     for shipment in job.shipments:
-        # Add the origin (pickup)
         locations.append(shipment.origin)
         pickup_index = len(locations) - 1
         
-        # Add the destination (drop)
         locations.append(shipment.destination)
         drop_index = len(locations) - 1
         
-        # Link them
         pickups_deliveries.append([pickup_index, drop_index])
 
     
-    # --- 2. Build Distance Matrix ---
-    #TODO: Replace this dummy distance matrix with real distances
-    # from a mapping API (e.g., Google Maps, OpenRouteService, etc.)
-    # !! DUMMY DATA !!
-    # This is the most important part to replace in Phase 5.
-    # We are faking the distances. This matrix MUST be
-    # len(locations) x len(locations).
-    
-    # For N locations, create an NxN matrix of all 0s
-    size = len(locations)
-    matrix = [[0] * size for _ in range(size)]
-    
-    # Fake some simple distances
-    for i in range(size):
-        for j in range(size):
-            if i != j:
-                matrix[i][j] = abs(i - j) * 10 # Arbitrary simple cost
+    # --- 2. Build REAL Distance Matrix ---
 
+    
+    print(f"Fetching distance matrix for {len(locations)} locations...")
+    matrix = maps_client.get_distance_matrix(locations)
+    
+    if matrix is None:
+        print("Error: Failed to get distance matrix from Google Maps.")
+        return None # Abort optimization if we have no data
+
+    print("Successfully fetched matrix.")
+
+    # --- 3. Package data for the solver ---
     data = {}
     data['distance_matrix'] = matrix
     data['pickups_deliveries'] = pickups_deliveries
     data['num_vehicles'] = 1 # We are only solving for one truck
-    data['depot'] = 0 # The depot is the first item in our 'locations' list
+    data['depot'] = 0 # The depot is the first item (index 0)
     
-    # Store this for later
+    # Store maps for parsing the solution later
     data['locations_map'] = locations
     data['shipment_map'] = job.shipments
     
@@ -72,10 +59,15 @@ def create_data_model(job):
 def solve_vrp(job):
     """
     Solves the Vehicle Routing Problem for a given job.
+    (This function remains unchanged, as it just operates on 'data')
     """
     
     # 1. Prepare the data
     data = create_data_model(job)
+    
+    # Handle failure from create_data_model
+    if data is None:
+        return None
 
     # 2. Setup the VRP problem
     manager = pywrapcp.RoutingIndexManager(
@@ -115,42 +107,36 @@ def solve_vrp(job):
     if solution:
         return parse_solution(data, manager, routing, solution, job)
     else:
+        print("Optimization failed: No solution found.")
         return None
 
 def parse_solution(data, manager, routing, solution, job):
     """
     Converts the solver's output into our Pydantic schemas.
+    (This function remains unchanged)
     """
-    # Maps are for reconstructing the route
     locations_map = data['locations_map']
     
-    # Map location-list-index to a shipment ID
-    # e.g., locations_map[3] ('New York') belongs to shipment_id=1
     shipment_lookup = {}
     shipment_id_counter = 0
     for i, loc in enumerate(locations_map):
-        if i == 0: # Skip depot
-            continue
+        if i == 0: continue # Skip depot
         
-        # Every 2 locations (origin, dest) belong to one shipment
         shipment_id = job.shipments[shipment_id_counter].id
         
         if (i % 2) == 1: # Odd index = origin
             shipment_lookup[i] = (shipment_id, loc, "PICKUP")
         else: # Even index = destination
             shipment_lookup[i] = (shipment_id, loc, "DROP")
-            shipment_id_counter += 1 # Move to next shipment
-
+            shipment_id_counter += 1
     
     route_obj = schemas.SolutionRoute()
-    
-    # We only have one vehicle (index 0)
     index = routing.Start(0)
     
     while not routing.IsEnd(index):
         node_index = manager.IndexToNode(index)
         
-        if node_index != 0: # Don't add the depot to the stop list
+        if node_index != 0: # Don't add the depot (index 0)
             ship_id, loc_name, stop_type = shipment_lookup[node_index]
             route_obj.stops.append(schemas.SolutionStop(
                 id=ship_id,
