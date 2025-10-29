@@ -1,57 +1,24 @@
-import React, { useState } from "react";
-// Import our new API function
-import { createJob } from "./api";
-
-// Remove all the default CSS and logo imports
-// import './App.css';
+import { useState } from "react";
+import { CreateJob } from "./components/CreateJob";
+import { AddShipmentForm } from "./components/AddShipmentForm";
 
 function App() {
-  // Create state variables to hold the job ID or any error
-  const [jobId, setJobId] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  // This function will be called when the button is clicked
-  const handleCreateJob = async () => {
-    try {
-      // Clear any old errors
-      setError(null);
-      setJobId(null);
-
-      // Call our API!
-      console.log("Creating new job...");
-      const response = await createJob();
-
-      // On success, 'response.data' will be our new Job object
-      console.log("Success!", response.data);
-      setJobId(response.data.id);
-    } catch (err: any) {
-      // On failure, log the error and show it to the user
-      console.error("Failed to create job:", err);
-      setError(err.message || "An unknown error occurred.");
-    }
-  };
+  // This state will hold the ID of the job we are working on
+  const [currentJobId, setCurrentJobId] = useState<number | null>(null);
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>LogiOpt Dashboard</h1>
+    <div className="flex flex-col items-center min-h-screen p-8 bg-gray-50">
+      <h1 className="text-3xl font-bold mb-8">LogiOpt Dashboard</h1>
 
-      {/* Our main action button */}
-      <button onClick={handleCreateJob}>Create New Job</button>
+      {/* This is a conditional render.
+        If we DON'T have a job ID, show the 'CreateJob' component.
+        If we DO have a job ID, show the 'AddShipmentForm' component.
+      */}
 
-      {/* Show the job ID on success */}
-      {jobId && (
-        <div style={{ marginTop: "1rem" }}>
-          <h3>New Job Created!</h3>
-          <p>Job ID: {jobId}</p>
-        </div>
-      )}
-
-      {/* Show an error message on failure */}
-      {error && (
-        <div style={{ marginTop: "1rem", color: "red" }}>
-          <h3>Error:</h3>
-          <p>{error}</p>
-        </div>
+      {!currentJobId ? (
+        <CreateJob onJobCreated={setCurrentJobId} />
+      ) : (
+        <AddShipmentForm jobId={currentJobId} />
       )}
     </div>
   );
