@@ -1,7 +1,7 @@
-import axios from 'axios';
+import axios from "axios";
 
 // The base URL for our FastAPI backend
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = "http://localhost:8000";
 
 /**
  * Creates an Axios client instance pre-configured with the backend URL
@@ -10,7 +10,7 @@ const API_BASE_URL = 'http://localhost:8000';
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -59,7 +59,7 @@ export interface ShipmentCreate {
  * @returns A promise that resolves to an array of Job objects.
  */
 export const getJobs = () => {
-  return apiClient.get<Job[]>('/jobs/');
+  return apiClient.get<Job[]>("/jobs/");
 };
 
 /**
@@ -77,7 +77,7 @@ export const getJobById = (jobId: number) => {
  */
 export const createJob = () => {
   // A new job is created with a default 'pending' status on the backend.
-  return apiClient.post<Job>('/jobs/', { status: 'pending' });
+  return apiClient.post<Job>("/jobs/", { status: "pending" });
 };
 
 /**
@@ -88,4 +88,36 @@ export const createJob = () => {
  */
 export const createShipment = (jobId: number, shipment: ShipmentCreate) => {
   return apiClient.post<Shipment>(`/jobs/${jobId}/shipments/`, shipment);
+};
+
+/**
+ * Represents a single stop in an optimized route.
+ */
+export interface SolutionStop {
+  id: number;
+  location: string;
+  type: "PICKUP" | "DROP";
+}
+
+/**
+ * Represents a single vehicle's route.
+ */
+export interface SolutionRoute {
+  stops: SolutionStop[];
+}
+
+/**
+ * The complete solution object returned from the /solve endpoint.
+ */
+export interface Solution {
+  routes: SolutionRoute[];
+}
+
+/**
+ * Triggers the optimization solver for a given job.
+ * @param jobId The ID of the job to solve.
+ * @returns A promise that resolves to the Solution object.
+ */
+export const solveJob = (jobId: number) => {
+  return apiClient.post<Solution>(`/jobs/${jobId}/solve`);
 };
