@@ -1,3 +1,9 @@
+"""
+SQLAlchemy models for Job and Shipment entities.
+Defines the database schema and relationships for logistics optimization jobs
+and their associated shipments.
+"""
+
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func

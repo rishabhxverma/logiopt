@@ -1,3 +1,9 @@
+"""
+CRUD operations for Job and Shipment models.
+This module provides functions to create and read jobs and shipments
+from the database using SQLAlchemy ORM.
+"""
+
 from sqlalchemy.orm import Session
 from . import models, schemas
 
@@ -45,3 +51,18 @@ def create_shipment_for_job(db: Session, shipment: schemas.ShipmentCreate, job_i
     db.commit()
     db.refresh(db_shipment)
     return db_shipment
+
+#==============================================================================
+# UPDATE Operations
+#==============================================================================
+
+def update_job_status(db: Session, job_id: int, status: str):
+    """
+    Updates the status of a specific job.
+    """
+    db_job = get_job(db, job_id=job_id)
+    if db_job:
+        db_job.status = status
+        db.commit()
+        db.refresh(db_job)
+    return db_job

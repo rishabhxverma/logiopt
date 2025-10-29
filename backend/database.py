@@ -1,3 +1,9 @@
+"""
+Database setup and session management using SQLAlchemy.
+This module defines the database connection, session factory,
+and base class for models.
+"""
+
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base

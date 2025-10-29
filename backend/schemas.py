@@ -66,3 +66,29 @@ class Job(JobBase):
 
     class Config:
         orm_mode = True
+
+
+#==============================================================================
+# Solution Schemas
+#==============================================================================
+
+class SolutionStop(BaseModel):
+    """
+    Represents a single stop in the solved route.
+    """
+    id: int         # The ID of the shipment
+    location: str   # The 'origin' or 'destination'
+    type: str       # 'PICKUP' or 'DROP'
+    
+class SolutionRoute(BaseModel):
+    """
+    Represents the complete route for a single vehicle.
+    """
+    stops: List[SolutionStop] = []
+
+class Solution(BaseModel):
+    """
+    The final solution response, containing all routes.
+    For our simple VRP, we'll only have one route.
+    """
+    routes: List[SolutionRoute] = []
