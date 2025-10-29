@@ -1,3 +1,5 @@
+// NO import at the top for tailwindcss-animate
+
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: ["class"],
@@ -33,5 +35,7 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  // Make absolutely sure this 'plugins' line is either deleted
+  // OR looks exactly like this (empty array):
+  plugins: [],
 };

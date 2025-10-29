@@ -97,6 +97,11 @@ export interface SolutionStop {
   id: number;
   location: string;
   type: "PICKUP" | "DROP";
+
+  // --- ADD THESE TWO LINES ---
+  lat: number;
+  lng: number;
+  // --- END OF ADDITION ---
 }
 
 /**

@@ -1,22 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { CreateJob } from "./components/CreateJob";
 import { AddShipmentForm } from "./components/AddShipmentForm";
 import { JobStatus } from "./components/JobStatus";
 import { SolutionDisplay } from "./components/SolutionDisplay";
+import { MapDisplay } from "./components/MapDisplay";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
+import { APIProvider } from "@vis.gl/react-google-maps";
 import * as api from "./api";
 
+// 1. Get the Google Maps API key from our .env.local file
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
 function App() {
-  // State for the entire application
   const [currentJob, setCurrentJob] = useState<api.Job | null>(null);
   const [solution, setSolution] = useState<api.Solution | null>(null);
-  const [isLoading, setIsLoading] = useState(false); // For loading job or solution
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Fetches the full job object from the API and updates state.
-   */
   const fetchJob = async (jobId: number) => {
     setIsLoading(true);
     setError(null);
@@ -30,28 +38,18 @@ function App() {
     setIsLoading(false);
   };
 
-  /**
-   * Callback for when the 'CreateJob' component succeeds.
-   */
   const handleJobCreated = (jobId: number) => {
-    fetchJob(jobId); // Fetch the new job to get it into state
+    fetchJob(jobId);
   };
 
-  /**
-   * Callback for when 'AddShipmentForm' adds a new shipment.
-   */
   const handleShipmentAdded = () => {
     if (currentJob) {
-      fetchJob(currentJob.id); // Re-fetch the job to get the new shipment list
+      fetchJob(currentJob.id);
     }
   };
 
-  /**
-   * Callback for when 'JobStatus' clicks "Run Optimization".
-   */
   const handleRunOptimization = async () => {
     if (!currentJob) return;
-
     setIsLoading(true);
     setError(null);
     setSolution(null);
@@ -66,59 +64,115 @@ function App() {
     setIsLoading(false);
   };
 
+  // A new function to reset the app state
+  const handleStartNewJob = () => {
+    setCurrentJob(null);
+    setSolution(null);
+    setError(null);
+  };
+
   /**
-   * Renders the main content based on the current application state.
+   * Renders the main panel (left side)
    */
-  const renderContent = () => {
-    // 1. If we have a solution, show it
-    if (solution) {
-      return <SolutionDisplay solution={solution} />;
+  const renderPanel = () => {
+    // 1. Loading state (before job is created)
+    if (isLoading && !currentJob) {
+      return (
+        <div className="flex justify-center items-center h-full">
+          <Loader2 className="animate-spin" size={48} />
+        </div>
+      );
     }
 
-    // 2. If we are actively working on a job, show the job UI
-    if (currentJob) {
+    // 2. Initial state: No job created yet
+    if (!currentJob) {
       return (
-        <>
-          {/* We pass the 'job' object down to both components */}
+        <div className="p-8">
+          <CreateJob onJobCreated={handleJobCreated} />
+        </div>
+      );
+    }
+
+    // 3. Main state: Job is active, show inputs and status
+    return (
+      <ScrollArea className="h-full">
+        <div className="p-6 space-y-6">
           <AddShipmentForm
-            {...({
-              jobId: currentJob.id,
-              onShipmentAdded: handleShipmentAdded,
-            } as any)}
+            jobId={currentJob.id}
+            onShipmentAdded={handleShipmentAdded}
           />
           <JobStatus
             job={currentJob}
             onRunOptimization={handleRunOptimization}
-            isLoading={isLoading} // Pass loading state to disable button
+            isLoading={isLoading}
           />
-        </>
-      );
-    }
-
-    // 3. If we are in a loading state (e.g., fetching job)
-    if (isLoading) {
-      return <Loader2 className="animate-spin" size={48} />;
-    }
-
-    // 4. If we have no job, show the create button
-    return <CreateJob onJobCreated={handleJobCreated} />;
+          {solution && (
+            <>
+              <SolutionDisplay solution={solution} />
+              <Button
+                onClick={handleStartNewJob}
+                variant="outline"
+                className="w-full"
+              >
+                Start New Job
+              </Button>
+            </>
+          )}
+        </div>
+      </ScrollArea>
+    );
   };
 
-  return (
-    <div className="flex flex-col items-center min-h-screen p-8 bg-gray-50">
-      <h1 className="text-3xl font-bold mb-8">LogiOpt Dashboard</h1>
-
-      {/* Render any top-level errors */}
-      {error && (
-        <Alert variant="destructive" className="w-full max-w-md mb-6">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+  // 2. Check if the key exists before rendering
+  if (!GOOGLE_MAPS_API_KEY) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Alert variant="destructive" className="w-96">
+          <AlertTitle>Configuration Error</AlertTitle>
+          <AlertDescription>
+            <p>VITE_GOOGLE_MAPS_API_KEY is not set.</p>
+            <p className="mt-2">
+              Please create a <strong>.env.local</strong> file in the /frontend
+              folder and add your key.
+            </p>
+          </AlertDescription>
         </Alert>
-      )}
+      </div>
+    );
+  }
 
-      {/* Render the main content based on state */}
-      {renderContent()}
-    </div>
+  // 3. Wrap the ENTIRE app in APIProvider
+  return (
+    <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
+      <div className="w-screen h-screen flex flex-col">
+        <header className="p-4 border-b bg-white shadow-sm z-10">
+          <h1 className="text-2xl font-bold bg-red-500">LogiOpt Dashboard</h1>
+        </header>
+
+        {error && (
+          <Alert
+            variant="destructive"
+            className="m-4 z-10 max-w-lg self-center"
+          >
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* 4. This is the new two-column layout */}
+        <ResizablePanelGroup direction="horizontal" className="flex-grow">
+          <ResizablePanel defaultSize={35} minSize={25} className="bg-white">
+            {/* --- Left Panel (Controls) --- */}
+            {renderPanel()}
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={65} minSize={30}>
+            {/* --- Right Panel (Map) --- */}
+            <MapDisplay solution={solution} />
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
+    </APIProvider>
   );
 }
 

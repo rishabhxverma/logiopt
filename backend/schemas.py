@@ -75,11 +75,17 @@ class Job(JobBase):
 class SolutionStop(BaseModel):
     """
     Represents a single stop in the solved route.
+    NOW INCLUDES GEOGRAPHIC COORDINATES.
     """
-    id: int         # The ID of the shipment
-    location: str   # The 'origin' or 'destination'
+    id: int         
+    location: str   
     type: str       # 'PICKUP' or 'DROP'
     
+    # --- ADD THESE TWO LINES ---
+    lat: float
+    lng: float
+    # --- END OF ADDITION ---
+
 class SolutionRoute(BaseModel):
     """
     Represents the complete route for a single vehicle.
