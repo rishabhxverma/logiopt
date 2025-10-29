@@ -8,51 +8,56 @@ from . import maps_client
 def create_data_model(job):
     """
     Prepares the data for the VRP solver.
-    This version now calls the Google Maps API for a REAL distance matrix.
+    This version now geocodes locations and fetches a real distance matrix.
     """
-    
-    # --- 1. Build Location List ---
-    
-    # The 'depot' is our fixed warehouse.
-    # In a real app, this would come from the user or database.
-    DEPOT_LOCATION = "450 W 33rd St, New York, NY 10001" # Example: An office in NYC
-    
+
+    DEPOT_LOCATION = "450 W 33rd St, New York, NY 10001"
+
     locations = [DEPOT_LOCATION]
     pickups_deliveries = []
-    
+
     for shipment in job.shipments:
         locations.append(shipment.origin)
         pickup_index = len(locations) - 1
-        
+
         locations.append(shipment.destination)
         drop_index = len(locations) - 1
-        
+
         pickups_deliveries.append([pickup_index, drop_index])
 
-    
-    # --- 2. Build REAL Distance Matrix ---
 
-    
+    # --- 1. Build REAL Distance Matrix ---
     print(f"Fetching distance matrix for {len(locations)} locations...")
     matrix = maps_client.get_distance_matrix(locations)
-    
     if matrix is None:
         print("Error: Failed to get distance matrix from Google Maps.")
-        return None # Abort optimization if we have no data
-
+        return None
     print("Successfully fetched matrix.")
+
+    # --- 2. Geocode all locations ---
+    # !!! THIS BLOCK WAS MISSING IN YOUR PASTED CODE !!!
+    print(f"Geocoding {len(locations)} locations...")
+    geocoded_locations = maps_client.geocode_locations(locations)
+    if None in geocoded_locations.values():
+        print("Error: One or more locations failed to geocode.")
+        return None
+    print("Successfully geocoded locations.")
+    # !!! END OF MISSING BLOCK !!!
+
 
     # --- 3. Package data for the solver ---
     data = {}
     data['distance_matrix'] = matrix
     data['pickups_deliveries'] = pickups_deliveries
-    data['num_vehicles'] = 1 # We are only solving for one truck
-    data['depot'] = 0 # The depot is the first item (index 0)
-    
-    # Store maps for parsing the solution later
+    data['num_vehicles'] = 1
+    data['depot'] = 0
+
     data['locations_map'] = locations
     data['shipment_map'] = job.shipments
-    
+    # !!! THIS LINE WAS ALSO MISSING - Stores the geocoded results !!!
+    data['geocoded_locations'] = geocoded_locations
+    # !!! END OF MISSING LINE !!!
+
     return data
 
 
@@ -116,19 +121,25 @@ def parse_solution(data, manager, routing, solution, job):
     (This function remains unchanged)
     """
     locations_map = data['locations_map']
-    
+    geocoded_locations = data['geocoded_locations']
+
+    # Inside parse_solution:
     shipment_lookup = {}
     shipment_id_counter = 0
-    for i, loc in enumerate(locations_map):
+    for i, loc_str in enumerate(locations_map):
         if i == 0: continue # Skip depot
-        
+
         shipment_id = job.shipments[shipment_id_counter].id
-        
+        coords = geocoded_locations[loc_str] # Get {lat, lng} <-- We already have this!
+
+        # --- THIS IS THE FIX ---
+        # Make sure 'coords' is stored in the tuple for BOTH pickup and drop
         if (i % 2) == 1: # Odd index = origin
-            shipment_lookup[i] = (shipment_id, loc, "PICKUP")
+            shipment_lookup[i] = (shipment_id, loc_str, "PICKUP", coords) # Now stores 4 values
         else: # Even index = destination
-            shipment_lookup[i] = (shipment_id, loc, "DROP")
+            shipment_lookup[i] = (shipment_id, loc_str, "DROP", coords) # Now stores 4 values
             shipment_id_counter += 1
+    # --- END OF FIX ---
     
     route_obj = schemas.SolutionRoute()
     index = routing.Start(0)
@@ -136,12 +147,17 @@ def parse_solution(data, manager, routing, solution, job):
     while not routing.IsEnd(index):
         node_index = manager.IndexToNode(index)
         
-        if node_index != 0: # Don't add the depot (index 0)
-            ship_id, loc_name, stop_type = shipment_lookup[node_index]
+# Inside the 'while' loop in parse_solution:
+        if node_index != 0:
+            ship_id, loc_name, stop_type, coords = shipment_lookup[node_index]
             route_obj.stops.append(schemas.SolutionStop(
                 id=ship_id,
                 location=loc_name,
-                type=stop_type
+                type=stop_type,
+                # --- ADD THESE TWO LINES ---
+                lat=coords['lat'],
+                lng=coords['lng']
+                # --- END OF ADDITION ---
             ))
         
         index = solution.Value(routing.NextVar(index))

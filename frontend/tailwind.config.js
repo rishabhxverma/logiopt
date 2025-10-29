@@ -1,4 +1,3 @@
-// NO import at the top for tailwindcss-animate
 
 /** @type {import('tailwindcss').Config} */
 export default {
